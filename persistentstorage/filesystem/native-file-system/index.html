@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Document</title>
+    <style>
+      img {
+        width: 300px;
+        margin: 20px;
+      }
+    </style>
+    <script src="./native.js"></script>
+  </head>
+  <body>
+    <button id="btn">choose</button>
+    <button id="btn_save">save</button>
+
+    <script>
+      function createImageNode(file, url) {
+        const ele = document.createElement('img');
+        ele.setAttribute('src', url);
+        ele.addEventListener('click', () => {
+          getSaveAsFileHandle({
+            name: file.name,
+            type: ['image/jpeg'],
+            description: 'Image',
+            extensions: ['jpg', 'png']
+          }).then(async handle => {
+            const blob = await fileToBlob(file);
+            await writeFile(handle, blob);
+            alert('保存成功');
+          });
+        });
+
+        document.body.appendChild(ele);
+      }
+
+      document.querySelector('#btn').addEventListener('click', async () => {
+        const handle = await getFileHandle();
+        getFile(handle).then(({ file, url }) => createImageNode(file, url));
+      });
+
+      let fileHandle;
+      document
+        .querySelector('#btn_save')
+        .addEventListener('click', async () => {
+          if (!fileHandle) {
+            getSaveAsFileHandle({
+              description: 'Text file',
+              extensions: ['txt'],
+              type: ['text/plain']
+            }).then(async handle => {
+              fileHandle = handle;
+              await writeFile(fileHandle, 'hello world!!!1');
+              alert('save success');
+            });
+          } else {
+            await writeFile(fileHandle, 'hello world!!!');
+            alert('save success');
+          }
+        });
+    </script>
+  </body>
+</html>

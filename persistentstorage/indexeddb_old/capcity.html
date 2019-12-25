@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Document</title>
+    <script src="./lib.js"></script>
+  </head>
+  <body>
+    <input type="file" multiple id="input" />
+
+    <script>
+          const dbName = 'test_db';
+          const storeName = 'test_capcity';
+
+          function toArray(list) {
+            return Array.prototype.slice.call(list || [], 0);
+          }
+
+          function guid(){
+            function s4() {
+              return Math.floor((1 + Math.random()) * 0x10000)
+                .toString(16)
+                .substring(1);
+            }
+
+            return `${s4() + s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`;
+          }
+
+          window.onload = () => {
+            IndexDB.createStore(dbName, storeName);
+
+            document.querySelector('#input').addEventListener('change', ev => {
+              const files = ev.target.files;
+
+              toArray(files).forEach(file => {
+                IndexDB.addOneData(dbName, storeName, {
+                  id: guid(),
+                  name: file.name,
+                  file
+                })
+              });
+            });
+          }
+    </script>
+  </body>
+</html>

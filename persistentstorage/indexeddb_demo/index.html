@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Document</title>
+    <script src="./lib.js"></script>
+    <style>
+      div {        
+        margin: 20px;
+        display: inline-block;
+      }
+
+      img{
+        width: 300px;
+      }
+    </style>
+  </head>
+  <body>
+    <input type="file" id="input" multiple />
+
+    <div>
+      <h1>磁盘配额和已使用空间</h1>
+      <h1 id="estimate"></h1>
+    </div>
+    <h1 id="info"></h1>
+
+    <script>
+      const dbName = 'test_db';
+      const storeName = 'test_store';
+      let fileLength = 0;
+      let fileSize = 0;
+
+      const updateInfo = async () => {
+        const ele = document.querySelector('#info');
+        ele.innerHTML = `文件个数:  ${fileLength}; 总大小: ${(
+          fileSize /
+          (1024 * 1024)
+        ).toFixed(2)}MB`;
+
+        // document.querySelector('#estimate').innerHTML = await diskEstimate();
+        diskEstimate().then(value => {
+          document.querySelector('#estimate').innerHTML = value;
+        })
+      };
+
+      const createElement = file => {
+        const div = document.createElement('div');
+
+        const imageNode = document.createElement('img');
+        imageNode.setAttribute('src', URL.createObjectURL(file));
+
+        const textNode = document.createTextNode(file.name);
+
+        div.appendChild(imageNode);
+        div.appendChild(textNode);
+        document.body.appendChild(div);
+      };
+
+      window.onload = async () => {
+        updateInfo();
+
+        const instance = new IndexDB({
+          dbName,
+          storeName,
+
+          // 随机一个. 确保onupgradeneeded会触发.
+          // dbVersion: Date.now()
+        });
+
+        console.time('retrieve');
+        let count = 0;
+        instance.createDb().then(() => {
+          instance.getAll().then(list => {
+            list.forEach((file, index) => {
+              fileLength += 1;
+              fileSize += file.size;
+
+              if (index <= 10) {
+                createElement(file);
+              }
+
+              updateInfo();
+
+              if(++count === list.length){
+                console.timeEnd('retrieve');
+              }              
+            });
+          });
+        });
+
+        document
+          .querySelector('#input')
+          .addEventListener('change', ev => {
+            console.time('save');
+            const files = toArray(ev.target.files);
+
+            let count = 0;  
+            const total = 100;     
+            let tmp=0;     
+
+            // 模拟, 添加多个文件.
+            while (count < total) {
+              count++;
+
+              for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                // const file = files[0];
+
+                const id = guid();
+              //   await instance.add(id, file);
+
+              //   const newFile = instance.get(id);
+              //   if (newFile) {
+              //     fileLength += 1;
+              //     fileSize += file.size;
+
+              //     updateInfo();
+              //   } else {
+              //     console.log('fail to get: ' + id);
+              //   }
+
+                instance.add(id, file).then(() => {
+                  instance.get(id).then(newFile => {
+                    if (newFile) {
+                      fileLength += 1;
+                      fileSize += file.size;
+
+                      updateInfo();
+
+                      if(++tmp === total * file.length){
+                        console.timeEnd('save');
+                      }
+                    } else {
+                      console.log('fail to get: ' + id);
+                    }
+                  });
+                });
+              }
+            }
+          });
+      };
+    </script>
+  </body>
+</html>

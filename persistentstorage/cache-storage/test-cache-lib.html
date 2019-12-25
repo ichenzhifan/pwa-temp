@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>测试cache的存储量</title>
+    <script src="../common/cache.js"></script>
+    <script src="../common/util.js"></script>
+    <style>
+      img {
+        width: 300px;
+        margin: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- <input id="input" multiple/> -->
+    <button id="btn">test cache capacity</button>
+    <button id="delete">delete cache</button>
+    <button id="getCacheItem">Get cache item</button>
+
+    <div>
+      <h1>磁盘配额和已使用空间</h1>
+      <h1 id="estimate"></h1>
+    </div>
+    <h1 id="info"></h1>
+
+    <div id="list"></div>
+
+    <script>
+      const oBtn = document.getElementById('btn');
+      const oDelete = document.getElementById('delete');
+      const oGetCacheItemBtn = document.getElementById('getCacheItem');
+      const oInfo = document.getElementById('info');
+      const oList = document.getElementById('list');
+
+      const cacheName = 'tt-cache';
+      const instance = new XCache(cacheName);
+
+      function addImageToBody(url) {
+        const imageNode = document.createElement('img');
+        imageNode.setAttribute('src', url);
+
+        imageNode.addEventListener('click', function() {
+          instance.deleteItem(url).then(() => {
+            imageNode.parentNode.removeChild(imageNode);
+
+            getCacheItemsCount().then(count => {
+              updateInfo(count);
+            });
+          });
+        });
+
+        oList.appendChild(imageNode);
+      }
+
+      function updateInfo(count) {
+        oInfo.innerHTML = `文件数: ${count}`;
+
+        estimateSpace().then(({ total, usage }) => {
+          document.querySelector('#estimate').innerHTML = `total: ${(
+            total / 1024
+          ).toFixed(4)}GB, usage: ${(usage / 1024).toFixed(4)}GB`;
+        });
+      }
+
+      function addToCache(url) {
+        const request = new Request(url);
+
+        fetch(request).then(response => {
+          console.log('put cache: ' + request.url);
+          instance.setItem(request, response).then(
+            result => {
+              console.log('put cache success ');
+
+              getCacheItemsCount().then(count => {
+                updateInfo(count);
+              });
+
+              addImageToBody(url);
+            },
+            error => {
+              console.error('put cache: ' + error);
+            }
+          );
+        });
+      }
+
+      function getCacheItemsCount() {
+        return instance.getAllKeys().then(requests => {
+          return requests.length;
+        });
+      }
+
+      window.onload = async function() {
+        await instance.openStorage();
+
+        oBtn.onclick = function() {
+          let count = 1;
+          while (count < 51) {
+            addToCache(`../images/${count}.jpg?v=${Date.now()}`);
+            count++;
+          }
+        };
+
+        oDelete.onclick = function() {
+          instance.deleteAllItems().then(() => {
+            console.log('deleted success');
+
+            getCacheItemsCount().then(count => {
+              updateInfo(count);
+            });
+
+            oList.innerHTML = '';
+          });
+        };
+
+        oGetCacheItemBtn.onclick = function() {
+          getCacheItemsCount().then(count => {
+            updateInfo(count);
+          });
+        };
+
+        // 渲染cache中所有的图片.
+        instance.getAllKeys().then(keys => {
+          keys.forEach(request => addImageToBody(request.url));
+        });
+
+        getCacheItemsCount().then(count => {
+          updateInfo(count);
+        });
+      };
+    </script>
+  </body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>测试cache的存储量</title>
+    <script src="../common/util.js"></script>
+    <script src="../common/swHelper.js"></script>
+    <style>
+      img {
+        width: 300px;
+        margin: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- <input id="input" multiple/> -->
+    <button id="btn">test cache capacity</button>
+    <button id="addNewImage">Add more</button>
+    <button id="getCacheItem">Get cache item</button>
+
+    <div>
+      <h1>磁盘配额和已使用空间</h1>
+      <h1 id="estimate"></h1>
+    </div>
+    <h1 id="info"></h1>
+
+    <h1 id="#info"></h1>
+
+    <script>
+      const getCachedFileCount = () => {
+        return fetch('/api/getKeys').then(res => res.json());
+      };
+
+      const updateInfo = () => {
+        Promise.all([getCachedFileCount(), estimateSpace()]).then(results => {
+          const { count } = results[0];
+          const { total, usage } = results[1];
+
+          const ele = document.querySelector('#info');
+          ele.innerHTML = `文件个数:  ${count}`;
+
+          document.querySelector('#estimate').innerHTML = `total: ${(
+            total / 1024
+          ).toFixed(4)}GB, usage: ${(usage / 1024).toFixed(4)}GB`;
+        });
+      };
+
+      function addImageToBody(url) {
+        const imageNode = document.createElement('img');
+        imageNode.setAttribute('src', url);
+
+        document.body.appendChild(imageNode);
+      }
+
+      window.onload = function() {
+        document
+          .querySelector('#btn')
+          .addEventListener('click', function(ev) {
+            let count = 1;
+            while (count < 11) {
+              // await sleep(5);
+
+              // addImageToBody('../images/1.jpg?v=' + Date.now());
+              fetch(`../images/t.zip-${count}.jpg?v=${Date.now()}`);
+              console.log('count', count);
+
+              updateInfo();
+              count++;
+            }
+          });
+
+        document.querySelector('#addNewImage').onclick = function() {
+          addImageToBody('../images/2.jpg');
+        };
+
+        document.querySelector('#getCacheItem').onclick = function() {
+          fetch('/api/getKeys')
+            .then(res => res.json())
+            .then(json => {
+              console.log(json);
+            });
+        };
+
+        registerWorker('./sw-cache-storage.js');
+
+        updateInfo();
+      };
+    </script>
+  </body>
+</html>

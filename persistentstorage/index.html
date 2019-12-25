@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Document</title>
+  </head>
+    <body>
+    <h1>xxxx</h1>
+    <script>
+      if (navigator.storage && navigator.storage.persist)
+
+      var db;
+      var requestDb = window.indexedDB.open('mytest');
+
+      requestDb.onerror = function(event) {
+        // Do something with request.errorCode!
+        console.log('requestDb onerror', event)
+      };
+      requestDb.onsuccess = function(event) {
+        // Do something with request.result!
+        console.log('requestDb onsuccess', event)
+        db = event.target.result;
+      };
+
+
+      navigator.storage.estimate().then(estimate => {
+        // estimate.quota is the estimated quota
+        // estimate.usage is the estimated number of bytes used
+        console.log(estimate.quota, estimate.usage);
+      });
+
+        navigator.storage.persisted().then(persistent => {
+          if (persistent)
+            console.log(
+              'Storage will not be cleared except by explicit user action',
+              persistent
+            );
+          else
+            console.log(
+              'Storage may be cleared by the UA under storage pressure.'
+            );
+        });
+    </script>
+  </body>
+</html>

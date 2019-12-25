@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Document</title>
+    <script src="./lib.js"></script>
+    <style>
+      img {
+        width: 300px;
+        margin: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <input type="file" id="input" multiple />
+
+    <div>
+      <h1>磁盘配额和已使用空间</h1>
+      <h1 id="estimate"></h1>
+    </div>
+    <h1 id="info"></h1>
+
+    <script>
+      /**
+       * 本地路径: C:\Users\duser\AppData\Local\Google\Chrome\User Data\Default\File System
+       * 浏览器支持: requestFileSystem: 只有chrome浏览器支持.
+       * 有用的链接: https://www.html5rocks.com/zh/tutorials/file/filesystem/
+       */
+
+      window.requestFileSystem =
+        window.requestFileSystem || window.webkitRequestFileSystem;
+      let fileLength = 0;
+      let fileSize = 0;
+
+      const updateInfo = async () => {
+        const ele = document.querySelector('#info');
+        ele.innerHTML = `文件个数:  ${fileLength}; 总大小: ${(
+          fileSize /
+          (1024 * 1024)
+        ).toFixed(2)}MB`;
+
+        document.querySelector('#estimate').innerHTML = await diskEstimate();
+      };
+
+      // window.TEMPORARY || window.PERSISTENT
+      // 10G
+      const size = 1024 * 1024 * 1024 * 10; //* 1024 * 10;
+      window.onload = async () => {
+        updateInfo();
+
+        const fs = await initFs(size, window.TEMPORARY);
+
+        const foldeName = 'test';
+        const folder = await createFolder(fs, foldeName);
+
+        console.time('retieve');
+        getFilesFromFolder(fs, foldeName).then(entries => {
+          fileLength += entries.length;
+
+          let count = 0;
+          entries.forEach(file => {
+            if (file.isFile) {
+              console.log('file.fullPath', file.fullPath);
+              getFile(fs, file.fullPath).then(({ file: newFile, url }) => {
+                if (++count === entries.length) {
+                  console.timeEnd('retieve');
+                }
+
+                fileSize += newFile.size;
+                // const ele = document.createElement('img');
+                // ele.setAttribute('src', url);
+                // ele.onclick = function(){
+                //   deleteFile(fs, file.fullPath).then(() => {
+                //     updateInfo();
+                //   });
+                // };
+                // document.body.appendChild(ele);
+
+                updateInfo();
+              });
+            }
+          });
+        });
+
+        function saveFile(files) {
+          return new Promise(resolve => {
+            toArray(files).forEach((file, index) => {
+              fileLength += 1;
+              const fileName =
+                foldeName + '/' + `${Date.now()}_${Math.random()}_${file.name}`;
+              console.log('fileName', fileName);
+
+              // 保存到本地
+              updateFile(fs, fileName, file).then(() => {
+                // 从fs中读取.
+                getFile(fs, fileName).then(({ file: newFile, url }) => {
+                  fileSize += newFile.size;
+                  // const ele = document.createElement('img');
+                  // ele.setAttribute('src', url);
+                  // document.body.appendChild(ele);
+
+                  updateInfo();
+
+                  if (index + 1 === files.length) {
+                    console.log('保存完成了..');
+                    resolve();
+                  }
+                });
+              });
+            });
+          });
+        }
+
+        document
+          .querySelector('#input')
+          .addEventListener('change', async function(ev) {
+            console.time('save');
+            const files = ev.target.files;
+
+            try {
+              let i = 0;
+              while (i <= 100) {
+                await saveFile(files);
+                i++;
+              }
+              console.timeEnd('save');
+            } catch (error) {
+              console.timeEnd('save');
+            }
+          });
+      };
+    </script>
+  </body>
+</html>

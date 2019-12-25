@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Document</title>
+    <style>
+      img{
+        width: 300px;
+        margin: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1 id="info"></h1>
+    <img src="" alt="" id="img1" />
+    <input type="file" accept="image/*" id="input1" multiple/>
+    <script>
+      var nameList = [];
+
+      window.onload = function() {
+        document
+          .querySelector('#input1')
+          .addEventListener('change', function(event) {
+            const files = event.target.files;
+
+            for (let index = 0; index < files.length; index++) {
+              const name = files[index].name + `_${Math.random()}`;
+              putElephantInDb(files[index], name);
+              retrieve(name)
+            }
+
+             console.log('done')
+          });
+
+
+        var loadAllImage = function(){
+          // nameList.forEach(name => retrieve(name));
+          // Open a transaction to the database
+          var transaction = db.transaction(
+            ['Demo'],
+            'readwrite'
+          );
+
+          var ttt = transaction.objectStore('Demo').getAllKeys();
+          ttt.onsuccess = function(evet){
+            const list = evet.target.result;
+            
+            // alert(list.length);
+            // list.forEach(m => retrieve(m));
+          }
+        }
+
+        var indexedDB = window.indexedDB || window.webkitIndexedDB;
+        var IDBTransaction =
+          window.IDBTransaction || window.webkitIDBTransaction;
+        var dbVersion = 1.0;
+
+        // Create/open database
+        var request = indexedDB.open('DemoFiles', dbVersion);
+        var db;
+
+        navigator.storage.estimate().then(estimate => {
+          // estimate.quota is the estimated quota
+          // estimate.usage is the estimated number of bytes used
+          var ut = 1024*1024;
+
+          document.querySelector('#info').innerHTML = `total: ${(estimate.quota / ut).toFixed(2)}M, usage: ${(estimate.usage/ut).toFixed(2)}M`
+        });
+
+        request.onsuccess = function(event) {
+          db = request.result;
+          db.onerror = function(event) {
+            console.log('Error creating/accessing IndexedDB database');
+          };
+
+          if (db.setVersion) {
+            if (db.version != dbVersion) {
+              var setVersion = db.setVersion(dbVersion);
+              setVersion.onsuccess = function() {
+                createObjectStore(db);
+              };
+            }
+          } 
+
+          loadAllImage();
+        };
+
+        // For future use. Currently only in latest Firefox versions
+        request.onupgradeneeded = function(event) {
+          createObjectStore(event.target.result);
+        };
+
+        var createObjectStore = function(dataBase) {
+          dataBase.createObjectStore('Demo');
+        };
+        var getImageFile = function() {
+          // putElephantInDb(blob);
+        };
+        var putElephantInDb = function(blob, id) {
+          // Open a transaction to the database
+          var transaction = db.transaction(
+            ['Demo'],
+            'readwrite'
+          );
+
+          // Put the blob into the dabase
+          var put = transaction.objectStore('Demo').put(blob, id);
+          console.log('put', put);
+        };
+        var retrieve = function(id) {
+          // Open a transaction to the database
+          var transaction = db.transaction(['Demo'], 'readwrite');
+          transaction.objectStore('Demo').get(id).onsuccess = function(event) {
+            var imgFile = event.target.result;
+            console.log('Got elephant!' + imgFile);
+
+            // Get window.URL object
+            var URL = window.URL || window.webkitURL;
+
+            // Create and revoke ObjectURL
+            var imgURL = URL.createObjectURL(imgFile);
+
+            var image = document.createElement('img');
+            image.setAttribute('src', imgURL);
+            document.body.appendChild(image);
+            // document.querySelector('#img1').setAttribute('src', imgURL);
+          };
+        };
+      };
+    </script>
+  </body>
+</html>

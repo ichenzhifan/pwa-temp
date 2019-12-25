@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Document</title>
+    <link rel="manifest" href="./manifest.json" crossorigin="use-credentials">
+    <link rel="stylesheet" href="./css/main.css" >
+  </head>
+  <body>
+    <h1 id="swStatus"></h1>
+    <div id="offline"></div>
+
+    <div>
+      <img src="./images/1.JPG"/>
+    </div>
+
+    <script>
+      // 注册sw
+      if('serviceWorker' in navigator){
+        navigator.serviceWorker.register('./sw.js').then(registration => {
+          document.querySelector('#swStatus').innerHTML = 'service worker 注册成功';
+        }, err => {
+          document.querySelector('#swStatus').innerHTML = 'service worker 注册失败';
+        })
+      }
+    </script>
+  </body>
+</html>

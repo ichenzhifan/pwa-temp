@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>测试cache的存储量</title>
+    <script src="../common/util.js"></script>
+    <style>
+      img {
+        width: 300px;
+        margin: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- <input id="input" multiple/> -->
+    <button id="btn">test cache capacity</button>
+    <button id="getCacheItem">Get cache item</button>
+
+    <div>
+      <h1>磁盘配额和已使用空间</h1>
+      <h1 id="estimate"></h1>
+    </div>
+    <h1 id="info"></h1>
+
+    <script>
+      const oBtn = document.getElementById('btn');
+      const oGetCacheItemBtn = document.getElementById('getCacheItem');
+      const oInfo = document.getElementById('info');
+      const cacheName = 'tt-cache';
+
+      function addImageToBody(url) {
+        const imageNode = document.createElement('img');
+        imageNode.setAttribute('src', url);
+
+        document.body.appendChild(imageNode);
+      }
+
+      function updateInfo(count) {
+        oInfo.innerHTML = `文件数: ${count}`;
+
+        estimateSpace().then(({ total, usage }) => {
+          document.querySelector('#estimate').innerHTML = `total: ${(
+            total / 1024
+          ).toFixed(4)}GB, usage: ${(usage / 1024).toFixed(4)}GB`;
+        });
+      }
+
+      function addToCache(url) {
+        caches.open(cacheName).then(cache => {
+          const request = new Request(url);
+          fetch(request).then(response => {
+            console.log('put cache: ' + request.url);
+            cache.put(request, response).then(
+              result => {
+                console.log('put cache success ');
+
+                getCacheItemsCount().then(count => {
+                  updateInfo(count);
+                });
+              },
+              error => {
+                console.error('put cache: ' + error);
+              }
+            );
+          });
+        });
+      }
+
+      function getCacheItemsCount() {
+        return caches.open(cacheName).then(cache => {
+          return cache.keys().then(requests => {
+            return requests.length;
+          });
+        });
+      }
+
+      window.onload = function() {
+        oBtn.onclick = function() {
+          let count = 1;
+          while (count < 11) {
+            addToCache(`../images/t.zip-${count}.jpg?v=${Date.now()}`);
+            count++;
+          }
+        };
+
+        oGetCacheItemBtn.onclick = function() {
+          getCacheItemsCount().then(count => {
+            updateInfo(count);
+          });
+        };
+
+        getCacheItemsCount().then(count => {
+          updateInfo(count);
+        });
+      };
+    </script>
+  </body>
+</html>
