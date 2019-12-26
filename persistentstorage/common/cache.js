@@ -3,7 +3,9 @@ function wrapPromise(cb) {
 }
 
 // 检查是否支持cacheStorage
-const verifyIsSupportCaches = () => 'caches' in window;
+const verifyIsSupportCaches = () => {
+  return typeof window === 'object' ? 'caches' in window : 'caches' in self;
+};
 
 /**
  * 封装cache storage.
@@ -57,7 +59,7 @@ class XCache {
   /**
    * 获取cachestorage下的所有cache对象.
    */
-  getCacheStorageNames(){
+  getCacheStorageNames() {
     return this.before((resolve, reject) => {
       caches.keys().then(resolve, reject);
     });
@@ -66,13 +68,13 @@ class XCache {
   /**
    * 删除cachestorage下的所有cache对象.
    */
-  deleteAllStorage(){
+  deleteAllStorage() {
     return this.before((resolve, reject) => {
       this.getCacheStorageNames().then(names => {
         const promises = [];
 
         names.forEach(name => {
-          promises.push(this.deleteStorage(name))
+          promises.push(this.deleteStorage(name));
         });
 
         return Promise.all(promises).then(resolve, reject);
@@ -239,6 +241,31 @@ class XCache {
   deleteAllItems() {
     return this.deleteStorage().then(() => {
       return this.openStorage();
+    });
+  }
+
+  /**
+   * 删除不再使用的cache.
+   * @param {Boolean} isExcludeCurrent 是否排除当前的正在使用的cache.
+   */
+  clearCache(isExcludeCurrent = true) {
+    return this.before((resolve, reject) => {
+      return this.getCacheStorageNames().then(names => {
+        Promise.all(
+          names
+            .filter(name => {
+              if (isExcludeCurrent) {
+                return name !== this.cacheName;
+              }
+
+              // 删除所有.
+              return true;
+            })
+            .map(key => {
+              return this.deleteStorage(key);
+            })
+        ).then(resolve, reject);
+      }, reject);
     });
   }
 }

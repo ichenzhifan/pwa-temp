@@ -7,6 +7,22 @@ function sleep(delay = 0){
 };
 
 /**
+ * 在网速慢的时候, 返回408响应的service worker代码
+ */
+function timeout(delay) {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      const resp = new Response('', {
+        status: 408,
+        statusText: 'Request timed out'
+      });
+
+      resolve(resp);
+    }, delay);
+  });
+}
+
+/**
  * 用户授权。申请持久存储.
  */
 function grantPersist() {

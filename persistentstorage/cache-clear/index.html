@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Document</title>
+    <link rel="manifest" href="./manifest.json" crossorigin="use-credentials" />
+    <link rel="stylesheet" href="./css/main.css" />
+    <script src="../common/strings.js"></script>
+    <script src="../common/util.js"></script>
+    <script src="../common/swHelper.js"></script>
+    <script src="../common/home-screen.js"></script>
+  </head>
+  <body>
+    <!-- <div>
+      <img src="./images/1.JPG" />
+    </div> -->
+    <button id="addImage">add image</button>
+    <button id="clearCache">clear cache</button>
+    <h1 id="swStatus"></h1>
+    <button id="addToHome" style="display: none">add to home</button>
+
+    <script>
+      function addImageToBody(url) {
+        const imageNode = document.createElement('img');
+        imageNode.setAttribute('src', url);
+
+        document.body.appendChild(imageNode);
+      }
+
+      function showInstallBtn(event) {
+        document.getElementById('addToHome').style.display = 'block';
+      }
+
+      function afterInstallToHome(event) {
+        console.log('afterInstallToHome');
+      }
+
+      window.onload = function() {
+        const oSwStatus = document.getElementById('swStatus');
+        const oAddImage = document.getElementById('addImage');
+        const oAddToHome = document.getElementById('addToHome');
+        const oClearCache = document.getElementById('clearCache');
+        const homeInstance = new XHomeScreen({
+          beforeInstall: showInstallBtn,
+          afterInstall: afterInstallToHome
+        });
+
+        // 添加到主屏幕.
+        oAddToHome.onclick = function() {
+          // 用户同意添加的主屏幕后, 清空上一次的缓存.
+          homeInstance.addToHome().then(() => {
+            oAddToHome.style.display = 'none';
+
+            // 清空缓存.
+            // 由于无法监听到应用卸载的时机.
+            // 我们可以在应用安装之前, 清除上一次的缓存, 间接的实现缓存清空的功能.
+            postMessageToSW({
+              type: actionTypes.clearCache,
+              name: 'test sss'
+            });
+          });
+        };
+
+        oClearCache.onclick = function() {
+          postMessageToSW({
+            type: actionTypes.clearCache,
+            name: 'test sss'
+          });
+        };
+
+        oAddImage.onclick = function() {
+          addImageToBody('./images/1.JPG');
+        };
+
+        // 注册sw
+        // 判断是否支持serviceWorker.
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker
+            .register('./sw.js')
+            .then(registration => {
+              // 注册成功
+              console.log('注册成功，', registration.scope);
+            })
+            .catch(err => {
+              // 注册失败
+              console.log(err);
+            });
+        }
+
+        // unregister().then(() => {
+        //   registerWorker('./sw.js').then(
+        //   () => {
+        //     oSwStatus.innerHTML = 'service worker 注册成功';
+        //   },
+        //   () => {
+        //     oSwStatus.innerHTML = 'service worker 注册失败';
+        //   }
+        // );
+        // });
+      };
+    </script>
+  </body>
+</html>

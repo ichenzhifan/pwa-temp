@@ -1,0 +1,23 @@
+body{
+  margin: 0 auto;
+}
+
+#swStatus{
+  position: absolute;
+  bottom: 0;
+  background: #777;
+  color: #fff;
+  width: 100%;
+}
+
+img{
+  width: 300px;
+}
+
+.disable-btn{
+  background: #777;
+}
+
+.enable-btn{
+  background: #000;
+}
