@@ -17,6 +17,7 @@ class XCache {
 
     // 在openStorage中初始化.
     this.cache = null;
+    this.openStorage();
   }
 
   /**

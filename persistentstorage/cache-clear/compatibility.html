@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>测试浏览器的兼容性</title>
+    <style>
+      li {
+        font-size: 18px;
+        color: green;
+      }
+
+      li.red {
+        color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <input type="text" id="text" />
+      <button id="checkBtn">检查</button>
+    </div>
+    <ul id="app"></ul>
+
+    <script>
+      var oApp = document.getElementById('app');
+      var checkBtn = document.getElementById('checkBtn');
+      var oText = document.getElementById('text');
+
+      window.onload = init;
+
+      var features = [
+        'Promise',
+        'Request',
+        'Response',
+        'indexedDB',
+        'navigator.serviceWorker',
+        'navigator.serviceWorker.register',
+        'navigator.serviceWorker.getRegistrations',
+
+        // 查看可用空间和已用空间.
+        'navigator.storage.estimate',
+
+        // 创建一个沙箱文件系统
+        'requestFileSystem',
+        'webkitRequestFileSystem',
+
+        // native-file-system
+        'chooseFileSystemEntries',
+        'FileReader',
+
+        'caches',
+        'localStorage',
+        'sessionStorage'
+      ];
+
+      function createItem(name) {
+        var li = document.createElement('li');
+        var t1 = document.createTextNode(name);
+
+        var isSupported = false;
+
+        try {
+          isSupported = typeof eval(name) !== 'undefined';
+        } catch (error) {
+          isSupported = false;
+        }
+
+        var t2 = document.createTextNode(': ' + isSupported);
+
+        if (!isSupported) {
+          li.setAttribute('class', 'red');
+        }
+
+        li.appendChild(t1);
+        li.appendChild(t2);
+        oApp.appendChild(li);
+      }
+
+      function init() {
+        checkBtn.onclick = function() {
+          const text = oText.value;
+          if (text) {
+            createItem(text);
+            oText.value = '';
+          }
+        };
+
+        features.forEach(function(name) {
+          createItem(name);
+        });
+      }
+    </script>
+  </body>
+</html>

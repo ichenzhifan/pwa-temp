@@ -13,20 +13,48 @@
     <script src="../common/home-screen.js"></script>
   </head>
   <body>
-    <!-- <div>
-      <img src="./images/1.JPG" />
-    </div> -->
-    <button id="addImage">add image</button>
-    <button id="clearCache">clear cache</button>
-    <h1 id="swStatus"></h1>
+    <!-- 1. 存储状态相关. -->
+    <div>
+      <h1 id="swStatus"></h1>
+      <h1 id="cacheStorageUsage"></h1>
+    </div>
+
+    <!-- 2. cache storage -->
+    <hr />
+    <div>
+      <button id="addImage">add image</button>
+      <button id="clearCache">clear cache</button>
+    </div>
+
+    <!-- 3. 添加到主屏幕 -->
+    <hr />
     <button id="addToHome" style="display: none">add to home</button>
+
+    <!-- 4. indexeddb -->
+    <hr />
+    <div>
+      <p>添加文件到indexed db</p>
+      <input type="file" id="indexdbInput" multiple />
+      <button id="getFileFromDb">get file from db</button>
+    </div>
+
+    <!-- 5. 后台同步 -->
+    <hr />
+    <div>
+      <p>后台同步</p>
+      <button id="syncBtn">后台同步</button>
+      <button id="periodicSyncBtn">定期同步</button>
+    </div>
+
+    <!-- images显示 -->
+    <div id="imagesList"></div>
 
     <script>
       function addImageToBody(url) {
         const imageNode = document.createElement('img');
         imageNode.setAttribute('src', url);
 
-        document.body.appendChild(imageNode);
+        document.getElementById('imagesList').appendChild(imageNode);
       }
 
       function showInstallBtn(event) {
@@ -37,11 +65,50 @@
         console.log('afterInstallToHome');
       }
 
-      window.onload = function() {
+      function messageHandle(event) {
+        const oCacheStorageUsage = document.getElementById('cacheStorageUsage');
+        const { type, items } = event.data;
+
+        switch (type) {
+          case actionTypes.getgetCacheImages: {
+            let size = 0;
+            items.forEach(item => {
+              size += item.size;
+              console.log('size', item.size);
+              addImageToBody(item.url);
+            });
+
+            oCacheStorageUsage.innerHTML =
+              'cacheStorage已使用: ' + (size / 1024).toFixed(4) + 'GB';
+            break;
+          }
+          case actionTypes.getDatabaseImages:
+          case actionTypes.addFileToDatabaseSuccess: {
+            items.forEach(file => {
+              addImageToBody(URL.createObjectURL(file));
+            });
+            break;
+          }
+          default: {
+            break;
+          }
+        }
+      }
+
+      window.onload = async function() {
         const oSwStatus = document.getElementById('swStatus');
         const oAddImage = document.getElementById('addImage');
         const oAddToHome = document.getElementById('addToHome');
         const oClearCache = document.getElementById('clearCache');
+        const oCacheStorageUsage = document.getElementById('cacheStorageUsage');
+        const oIndexdbInput = document.getElementById('indexdbInput');
+        const oGetFileFromDb = document.getElementById('getFileFromDb');
+
+        const oSyncBtn = document.getElementById('syncBtn');
+        const oPeriodicSyncBtn = document.getElementById('periodicSyncBtn');  
+        
+        const oImageList = document.getElementById('imagesList');
+
         const homeInstance = new XHomeScreen({
           beforeInstall: showInstallBtn,
           afterInstall: afterInstallToHome
@@ -63,6 +130,23 @@
           });
         };
 
+        // 选择图片, 添加到indexeddb中.
+        oIndexdbInput.onchange = function(event) {
+          // 向sw, 发送一个请求, 添加图片到indexed db中.
+          postMessageToSW({
+            type: actionTypes.addFileToDatabase,
+            files: event.target.files
+          });
+        };
+
+        // 查找db中的images对象.
+        oGetFileFromDb.onclick = function(event){
+          postMessageToSW({
+            type: actionTypes.getDatabaseImages
+          });
+        }
+
+        // 点击清除缓存
         oClearCache.onclick = function() {
           postMessageToSW({
             type: actionTypes.clearCache,
@@ -70,9 +154,20 @@
           });
         };
 
+        // 添加图片. 测试fetch功能
         oAddImage.onclick = function() {
-          addImageToBody('./images/1.JPG');
+          addImageToBody('./images/1.JPG?v=' + Date.now());
         };
+
+        // 向sw, 发送一个请求, 获取缓存中的images.
+        postMessageToSW({
+          type: actionTypes.getgetCacheImages
+        });
+
+        // 接受sw发送到页面的message,
+        navigator.serviceWorker.addEventListener('message', messageHandle);
+
+        await unregister();
 
         // 注册sw
         // 判断是否支持serviceWorker.

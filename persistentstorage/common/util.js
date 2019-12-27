@@ -2,9 +2,23 @@ function wrapPromise(cb) {
   return new Promise((resolve, reject) => cb(resolve, reject));
 }
 
-function sleep(delay = 0){
+function sleep(delay = 0) {
   return wrapPromise(resolve => setTimeout(resolve, delay));
-};
+}
+
+function guid() {
+  function s4() {
+    return Math.floor((1 + Math.random()) * 0x10000)
+      .toString(16)
+      .substring(1);
+  }
+
+  return `${s4() + s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`;
+}
+
+function toArray(list) {
+  return Array.prototype.slice.call(list || [], 0);
+}
 
 /**
  * 在网速慢的时候, 返回408响应的service worker代码
@@ -68,5 +82,42 @@ function estimateSpace() {
     } else {
       reject('navigator.storage.estimate: the browser is not supported');
     }
+  });
+}
+
+/**
+ * 计算Response对象的大小.
+ * @param {Response} response
+ */
+function computedResponseLength(response, unit = 'kb') {
+  return wrapPromise((resolve, reject) => {
+    response.arrayBuffer().then(buffer => {
+      const byteLength = buffer.byteLength;
+
+      let ut = 1024;
+      switch (unit) {
+        case 'KB': {
+          ut = 1024;
+          break;
+        }
+        case 'MB': {
+          ut = 1024 * 1024;
+          break;
+        }
+        case 'GB': {
+          ut = 1024 * 1024 * 1024;
+          break;
+        }
+        default: {
+          break;
+        }
+      }
+
+      // 转换为kb
+      resolve(byteLength / ut);
+    }, error => {
+      console.log(error);
+      reject(error);
+    });
   });
 }
